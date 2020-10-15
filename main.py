@@ -2,20 +2,19 @@ import json
 import argparse
 import os.path as path
 
-class KVStorage:
-    def __init__(self, command, name):
-        self.avalible_commands = {'init': self.init, 'open': self.open,
-                                  'add': self.add, 'list': self.list,
-                                  'delete': self.delete, 'load': self.load,
-                                  'save': self.save, 'help': self.help}
-        if command not in self.avalible_commands:
-            raise Exception('No such command, use -h')
-        self.command = self.avalible_commands[command]
-        self.name = name
-        self.data = {}
 
-    def run(self):
-        self.command()
+class KVStorage:
+    def __init__(self, args):
+        self.avalible_commands = {'init': self.init,
+                                  'add': self.add, 'list': self.list,
+                                  'delete': self.delete,
+                                  'load': self.load_key}
+        if args.command not in self.avalible_commands:
+            raise Exception('No such command')
+        self.name = args.name
+        self.key = args.key
+        self.value = args.value
+        self.avalible_commands[args.command]()
 
     def init(self):
         if path.isfile(f'{self.name}.json'):
@@ -24,59 +23,60 @@ class KVStorage:
         with open(f'{self.name}.json', 'w', encoding='utf-8') as file:
             file.write('')
 
-    def open(self):
+    def open_storage(self):
+        data = {}
         with open(f'{self.name}.json', encoding='utf-8') as file:
             try:
-                self.data = json.loads(file.read())
+                data = json.loads(file.read())
             except json.decoder.JSONDecodeError:
-                self.data = {}
-        self.parse_commands()
+                pass
+        return data
 
-    def list(self, commands):
-        for i in self.data:
-            print(f'{i}: {self.data[i]}')
+    def list(self):
+        data = self.open_storage()
+        for i in data:
+            print(f'{i}: {data[i]}')
 
-    def add(self, commands):
-        self.data[commands[1]] = commands[2]
+    def add(self):
+        if not self.key or not self.value:
+            print('No key or value')
+            return
+        data = self.open_storage()
+        data[self.key] = self.value
+        self.close_storage(data)
 
-    def delete(self, commands):
+    def delete(self):
+        data = self.open_storage()
         try:
-            del self.data[commands[1]]
+            del data[self.key]
         except KeyError:
-            return 'No such key'
+            print('No such key')
+        self.close_storage(data)
 
-    def load(self, commands):
+    def load_key(self):
+        data = self.open_storage()
         try:
-            return self.data[commands[1]]
+            print(data[self.key])
         except KeyError:
-            return 'No such key'
+            print('No such key')
 
-    def save(self, commands):
-        with open(f'{self.name}.json', 'a', encoding='utf-8') as file:
-            file.write(json.dumps(self.data))
-
-    def help(self, commands):
-        return 'this is help'
-
-    def parse_commands(self):
-        while True:
-            commands = input().split()
-            if commands[0] == 'exit':
-                break
-            if commands[0] not in self.avalible_commands:
-                print("Invalid command, type help")
-            result = self.avalible_commands[commands[0]](commands)
-            print(result)
+    def close_storage(self, data):
+        with open(f'{self.name}.json', 'w', encoding='utf-8') as file:
+            file.write(json.dumps(data))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KV-Storage')
-    parser.add_argument('command', type=str, metavar='',
-                        help='whaat to do')
     parser.add_argument('name', type=str, metavar='',
-                        help='Set True for infinity pinging')
+                        help='Storage name')
+    parser.add_argument('command', type=str, metavar='',
+                        help='command to execute')
+    parser.add_argument('-k', '--key', type=str, metavar='',
+                        required=False, help='Key to load or add',
+                        default=None)
+    parser.add_argument('-v', '--value', type=str, metavar='',
+                        required=False, help='Value to add or modify',
+                        default=None)
 
     args = parser.parse_args()
-
-    storage = KVStorage(args.command, args.name)
-    storage.run()
+    storage = KVStorage(args)
