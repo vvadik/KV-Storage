@@ -1,20 +1,31 @@
 import json
 import argparse
-import os.path as path
+from os import path
+
+
+def open_storage(name):
+    data = {}
+    with open(f'{name}.json', encoding='utf-8') as file:
+        try:
+            data = json.loads(file.read())
+        except json.decoder.JSONDecodeError:
+            pass
+    return data
 
 
 class KVStorage:
-    def __init__(self, args):
+    def __init__(self, name, command, key=None, value=None):
         self.avalible_commands = {'init': self.init,
-                                  'add': self.add, 'list': self.list,
+                                  'add': self.add,
+                                  'list': self.list,
                                   'delete': self.delete,
                                   'load': self.load_key}
-        if args.command not in self.avalible_commands:
-            raise Exception('No such command')
-        self.name = args.name
-        self.key = args.key
-        self.value = args.value
-        self.avalible_commands[args.command]()
+        if command not in self.avalible_commands:
+            print('No such command')
+        self.name = name
+        self.key = key
+        self.value = value
+        self.avalible_commands[command]()
 
     def init(self):
         if path.isfile(f'{self.name}.json'):
@@ -23,17 +34,8 @@ class KVStorage:
         with open(f'{self.name}.json', 'w', encoding='utf-8') as file:
             file.write('')
 
-    def open_storage(self):
-        data = {}
-        with open(f'{self.name}.json', encoding='utf-8') as file:
-            try:
-                data = json.loads(file.read())
-            except json.decoder.JSONDecodeError:
-                pass
-        return data
-
     def list(self):
-        data = self.open_storage()
+        data = open_storage(self.name)
         for i in data:
             print(f'{i}: {data[i]}')
 
@@ -41,12 +43,12 @@ class KVStorage:
         if not self.key or not self.value:
             print('No key or value')
             return
-        data = self.open_storage()
+        data = open_storage(self.name)
         data[self.key] = self.value
         self.close_storage(data)
 
     def delete(self):
-        data = self.open_storage()
+        data = open_storage(self.name)
         try:
             del data[self.key]
         except KeyError:
@@ -54,7 +56,7 @@ class KVStorage:
         self.close_storage(data)
 
     def load_key(self):
-        data = self.open_storage()
+        data = open_storage(self.name)
         try:
             print(data[self.key])
         except KeyError:
@@ -79,4 +81,4 @@ if __name__ == '__main__':
                         default=None)
 
     args = parser.parse_args()
-    storage = KVStorage(args)
+    storage = KVStorage(args.name, args.command, args.key, args.value)

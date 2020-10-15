@@ -1,24 +1,21 @@
 import unittest
-import os.path as path
-from main import KVStorage
+from os import path, remove
+from main import KVStorage, open_storage
 
 
 class Test_setup(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.storage = KVStorage('init', 'test')
-        self.storage.run()
+        KVStorage('test', 'init')
 
-    def test_create(self):
-        self.storage.add([0, 'first', 'second'])
-        self.storage.save([])
-        self.assertEqual(self.storage.data, {'first': 'second'})
-        self.assertEqual(path.isfile('test.json'), True)
+    @classmethod
+    def tearDownClass(self):
+        remove('test.json')
 
-    def test_error(self):
-        self.storage.delete([0, 'first'])
-        result = self.storage.delete([0, 'second'])
-        result2 = self.storage.load([0, 'first'])
-        self.assertEqual(self.storage.data, {})
-        self.assertEqual(result2, 'No such key')
-        self.assertEqual(result, 'No such key')
+    def test_add(self):
+        KVStorage('test', 'add', '123', 'abc')
+        self.assertEqual(open_storage('test'), {'123': 'abc'})
+
+    def test_delete(self):
+        KVStorage('test', 'delete', '123', 'abc')
+        self.assertEqual(open_storage('test'), {})
