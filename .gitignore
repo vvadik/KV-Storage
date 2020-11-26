@@ -6,3 +6,5 @@
 .idea/modules.xml
 __pycache__/main.cpython-39.pyc
 __pycache__/test_all.cpython-39.pyc
+.idea/inspectionProfiles/Project_Default.xml
+.idea/KV-Storage.iml
