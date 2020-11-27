@@ -1,5 +1,6 @@
 from hashlib import md5
 import struct
+import io
 from os import path
 
 with open('test1.txt', 'w') as file:
@@ -17,7 +18,30 @@ with open('test3.txt', 'w') as file:
 #     print(data)
 #     file.write(data)
 
+def test():
+    with open('test.dat', 'ab+') as file:
+        # file.write('abc'.encode())
+        file.seek(0)
+        data = file.read(5)
+        print(data)
+        file.seek(-3, 2)
+        print(file.read())
+
+
+def test2():
+    with open('test.dat', 'r') as file1:
+        with open('test.dat', 'a') as file2:
+            file2.write('TEST')
+        file1.seek(13)
+        data = file1.read(2)
+        print(data)
+        file1.seek(5)
+        data = file1.read(2)
+        print(data)
+
 if __name__ == '__main__':
+    test()
+    exit()
     length = path.getsize('test.dat')
     print(length)
     with open('test.dat', 'r') as file:
