@@ -125,13 +125,13 @@ class Local_Strorage:
 
     def run(self):
         while self._work:
+            self.file.seek(0)
             command, args = parse(input())
             print(command, args)
             if command not in self.commands:
                 print('unknown command or incorrect input')
                 continue
             self.commands[command](args)
-            self.file.seek(0)
 
 
 if __name__ == '__main__':
