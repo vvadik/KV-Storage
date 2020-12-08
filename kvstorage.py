@@ -47,7 +47,6 @@ class Local_Strorage:
         if not self._is_exists(key):
             return 'no such key'
         start = self.storage[hash_key]
-        print('Start the value', start)
         data = self.read(start)
         return data.decode()
 
@@ -100,10 +99,8 @@ class Local_Strorage:
         with open(f'{self.file_name}', 'rb+') as file:
             file.seek(-16, 2)
             start, length = struct.unpack('!QQ', file.read())
-            print('Start, length', start, length)
             file.seek(start)
             data = file.read(length)
-            print(data)
             storage, spaces = data.split(b' ')
             for i in range(0, len(storage), 40):
                 key_hash = storage[i:i+32].decode()
@@ -111,11 +108,8 @@ class Local_Strorage:
                 self.storage[key_hash] = value_start
             for i in range(0, len(spaces), 16):
                 del_start, del_end = struct.unpack('!QQ', spaces[i:i+16])
-                # if del_end in self.deleted_sectors:
-                #     self.deleted_sectors[del_start] = del_end
                 self.deleted_sectors[del_start] = del_end
-            print(self.storage)
-            print('Deleted sectors', self.deleted_sectors)
+
             file.seek(start)
             file.truncate()
 
@@ -127,7 +121,6 @@ class Local_Strorage:
         while self._work:
             self.file.seek(0)
             command, args = parse(input())
-            print(command, args)
             if command not in self.commands:
                 print('unknown command or incorrect input')
                 continue
