@@ -56,7 +56,7 @@ class Test_setup(unittest.TestCase):
             key = ''.join(random.choice(string.ascii_letters)
                           for _ in range(random.randint(10, 100)))
             value = ''.join(random.choice(string.ascii_letters)
-                          for _ in range(random.randint(10, 100)))
+                            for _ in range(random.randint(10, 100)))
             if pair % repeat_check == 0:
                 self.check[key] = value
             self.storage.add_key((key, value))

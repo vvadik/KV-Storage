@@ -1,4 +1,4 @@
-from os import path
+from os import path, remove, rename
 import argparse
 import struct
 from hashlib import md5
@@ -19,7 +19,8 @@ class Local_Strorage:
                          '?': self.get_key,
                          '??': self.is_exists,
                          'x': self.remove_key,
-                         'close': self.close}
+                         'close': self.close,
+                         'defragment': self.defragmentation}
         self._work = True
 
     def read(self, start):
@@ -72,6 +73,23 @@ class Local_Strorage:
         length = struct.unpack('!Q', self.file.read(8))[0]
         self.deleted_sectors[start] = start + length + 8
         del(self.storage[md5(key.encode()).hexdigest()])
+
+    def defragmentation(self, type=None):
+        with open(f".{self.file_name}", 'wb+') as tmp:
+            for key, value in self.storage.items():
+                value = self.read(value)
+                value_len = struct.pack('!Q', len(value))
+                tmp.seek(0)
+                start = path.getsize(f'.{self.file_name}')
+                print(start)
+                self.storage[key] = start
+                tmp.seek(0, 2)
+                tmp.write(value_len + value)
+                tmp.seek(0)
+        self.file.close()
+        remove(self.file_name)
+        rename(f'.{self.file_name}', self.file_name)
+        self.file = open(f'{self.file_name}', 'rb+')
 
     def close(self, type=None):
         self.file.seek(0)
