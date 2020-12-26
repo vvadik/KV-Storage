@@ -3,7 +3,7 @@ import random
 import string
 from unittest.mock import patch
 from os import remove
-from kvstorage import Local_Strorage
+from kvstorage import LocalStrorage
 
 
 class HashMock:
@@ -24,7 +24,7 @@ class BadHashMock:
 
 class Test_setup(unittest.TestCase):
     def setUp(self):
-        self.storage = Local_Strorage('Test_storage.dat')
+        self.storage = LocalStrorage('Test_storage.dat')
 
     def tearDown(self):
         self.storage.close()
@@ -42,8 +42,8 @@ class Test_setup(unittest.TestCase):
         self.assertEqual(self.storage._get_key('d'), 'no such key')
 
         # delete
-        self.storage.remove_key('a')
-        self.storage.remove_key('asd')
+        self.storage._remove_key('a')
+        self.storage._remove_key('asd')
         self.assertEqual(self.storage._is_exists('a'), False)
         self.assertEqual(self.storage._get_key('a'), 'no such key')
         self.assertEqual(self.storage._is_exists('asd'), False)
@@ -53,7 +53,7 @@ class Test_setup(unittest.TestCase):
 
         # open\close
         self.storage.close()
-        self.storage = Local_Strorage('Test_storage.dat')
+        self.storage = LocalStrorage('Test_storage.dat')
         self.assertEqual(len(self.storage.storage), 1)
         self.assertEqual(len(self.storage.deleted_sectors), 3)
 
@@ -88,7 +88,7 @@ class Test_setup(unittest.TestCase):
                 self.check2[key] = value
             self.storage.add_key((key, value))
         for key, value in self.check.items():
-            self.storage.remove_key(key)
+            self.storage._remove_key(key)
 
         for key, value in self.check.items():
             self.assertEqual(self.storage._get_key(key), 'no such key')
@@ -128,7 +128,7 @@ class Test_setup(unittest.TestCase):
                 self.check2[key] = value
             self.storage.add_key((key, value))
         for key, value in self.check.items():
-            self.storage.remove_key(key)
+            self.storage._remove_key(key)
 
         for key, value in self.check.items():
             self.assertEqual(self.storage._get_key(key), 'no such key')
@@ -152,7 +152,7 @@ class Test_setup(unittest.TestCase):
                 self.check2[key] = value
             self.storage.add_key((key, value))
         for key, value in self.check.items():
-            self.storage.remove_key(key)
+            self.storage._remove_key(key)
 
         for key, value in self.check.items():
             self.assertEqual(self.storage._get_key(key), 'no such key')

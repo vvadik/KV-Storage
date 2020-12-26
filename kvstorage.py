@@ -6,7 +6,7 @@ from hashlib import md5
 from parse_input import parse
 
 
-class Local_Strorage:
+class LocalStrorage:
     def __init__(self, file_name):
         self.file_name = file_name
         self.storage = {}
@@ -19,7 +19,7 @@ class Local_Strorage:
         self.commands = {'=': self.add_key,
                          '?': self.get_key,
                          '??': self.is_exists,
-                         'x': self.remove_key,
+                         'x': self._remove_key,
                          'close': self.close,
                          'defragment': self.defragmentation}
         self._work = True
@@ -41,7 +41,7 @@ class Local_Strorage:
         hash_key = md5(key.encode()).hexdigest()
         first_key = 0
         if hash_key in self.storage:
-            first_key = self.remove_key(key)
+            first_key = self._remove_key(key)
         key_len = struct.pack('!Q', len(key))
         value_len = struct.pack('!Q', len(value))
         next_ = struct.pack('!Q', first_key)
@@ -75,16 +75,14 @@ class Local_Strorage:
         print(result)
 
     def remove_key(self, key):
-        '''Ну крч, нужно удалить правильный участок. При этом
-        у прошлого участка next_ перенаправить на участок, следовавший
-        за удаленным
-        Пока это не сделано
-        '''
-        found_duplicate_key = False
-        hash_key = md5(key.encode()).hexdigest()
         if not self._is_exists(key):
             print('no such key')
             return
+        self._remove_key(key)
+
+    def _remove_key(self, key):
+        found_duplicate_key = False
+        hash_key = md5(key.encode()).hexdigest()
         start = self.storage[hash_key]
         self.file.seek(start)
         next_ = 1
@@ -106,9 +104,7 @@ class Local_Strorage:
             start = next_
             self.file.seek(next_)
         if next(counter) == 1 and found_duplicate_key:
-            if next_ != 0:
-                self.storage[hash_key] = next_
-            else:
+            if next_ == 0:
                 del self.storage[hash_key]
             return next_
 
@@ -190,5 +186,5 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KV-Storage')
     parser.add_argument('name', type=str, help='Storage name')
     args_p = parser.parse_args()
-    storage = Local_Strorage(args_p.name)
+    storage = LocalStrorage(args_p.name)
     storage.run()
