@@ -1,4 +1,5 @@
-from os import path, remove, rename
+from os import path
+from itertools import count
 import argparse
 import struct
 from hashlib import md5
@@ -24,25 +25,26 @@ class Local_Strorage:
         self._work = True
 
     def read(self, start, key):
-        self.file.seek(start)
-        key_len, next_, value_len = struct.unpack('!QQQ', self.file.read(24))
-        key_from_storage = self.file.read(key_len)
-        if key != key_from_storage.decode():
-            if next_:
-                return self.read(next_, key)
-            return b'no such key'
-        value = self.file.read(value_len)
-        return value
+        next_ = start
+        while next_:
+            self.file.seek(next_)
+            key_len, next_, value_len = struct.unpack('!QQQ', self.file.read(24))
+            key_from_storage = self.file.read(key_len)
+            if key != key_from_storage.decode():
+                continue
+            value = self.file.read(value_len)
+            return value
+        return b'no such key'
 
     def add_key(self, pair):
         key, value = pair
         hash_key = md5(key.encode()).hexdigest()
-        next_key = 0
+        first_key = 0
         if hash_key in self.storage:
-            next_key = self.remove_key(key, True)
+            first_key = self.remove_key(key)
         key_len = struct.pack('!Q', len(key))
         value_len = struct.pack('!Q', len(value))
-        next_ = struct.pack('!Q', next_key)
+        next_ = struct.pack('!Q', first_key)
 
         self.file.seek(0)
         start = path.getsize(self.file_name)
@@ -72,46 +74,45 @@ class Local_Strorage:
         result = self._is_exists(key)
         print(result)
 
-    def remove_key(self, key, update_next_=False):
+    def remove_key(self, key):
         '''Ну крч, нужно удалить правильный участок. При этом
         у прошлого участка next_ перенаправить на участок, следовавший
         за удаленным
         Пока это не сделано
         '''
+        found_duplicate_key = False
         hash_key = md5(key.encode()).hexdigest()
-        previous_field_next = False
         if not self._is_exists(key):
             print('no such key')
             return
         start = self.storage[hash_key]
         self.file.seek(start)
         next_ = 1
-
+        counter = count()
+        previous_field_next_value = 0
         while next_:
-            previous_field_next_value = start + 8
-
+            next(counter)
             key_len, next_, value_len = struct.unpack('!QQQ',
                                                       self.file.read(24))
             key_from_storage = self.file.read(key_len)
             if key_from_storage.decode() == key:
+                found_duplicate_key = True
                 self.deleted_sectors[start] = key_len + value_len + 24
-                if update_next_:
-                    self.file.seek(previous_field_next_value)
-                    self.file.write(struct.pack('!Q',
-                                                path.getsize(self.file_name)))
-                    return next_
-                else:
+                if previous_field_next_value:
                     self.file.seek(previous_field_next_value)
                     self.file.write(struct.pack('!Q', next_))
-                    break
-
+                break
+            previous_field_next_value = start + 8
             start = next_
-            if not previous_field_next:
-                previous_field_next = True
-
             self.file.seek(next_)
+        if next(counter) == 1 and found_duplicate_key:
+            if next_ != 0:
+                self.storage[hash_key] = next_
+            else:
+                del self.storage[hash_key]
+            return next_
 
-        del self.storage[md5(key.encode()).hexdigest()]
+        return self.storage[hash_key]
 
     def defragmentation(self, type_=None):
         pass
@@ -121,7 +122,7 @@ class Local_Strorage:
         #         value_len = struct.pack('!Q', len(value))
         #         tmp.seek(0)
         #         start = path.getsize(f'.{self.file_name}')
-        #         print(start)
+
         #         self.storage[key] = start
         #         tmp.seek(0, 2)
         #         tmp.write(value_len + value)
@@ -173,7 +174,7 @@ class Local_Strorage:
 
     def create_storage(self):
         with open(f'{self.file_name}', 'wb') as file:
-            pass
+            file.write(b'1')
 
     def run(self):
         while self._work:
