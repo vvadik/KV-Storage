@@ -62,3 +62,24 @@ class Test_setup(unittest.TestCase):
             self.storage.add_key((key, value))
         for key, value in self.check.items():
             self.assertEqual(self.storage._get_key(key), value)
+
+    # def test_random_delete(self):
+    #     self.storage.close()
+    #     remove('Test_storage.dat')
+    #     self.storage = Local_Strorage('Test_storage.dat')
+    #
+    #     self.check = {}
+    #     amount_pairs = random.randint(5000, 10000)
+    #     repeat_check = random.randint(100, 200)
+    #     for pair in range(amount_pairs):
+    #         key = ''.join(random.choice(string.ascii_letters)
+    #                       for _ in range(random.randint(10, 100)))
+    #         value = ''.join(random.choice(string.ascii_letters)
+    #                         for _ in range(random.randint(10, 100)))
+    #         if pair % repeat_check == 0:
+    #             self.check[key] = value
+    #         self.storage.add_key((key, value))
+    #     for key, value in self.check.items():
+    #         self.storage.remove_key(key)
+    #     self.assertEqual(amount_pairs - len(self.check),
+    #                      len(self.storage.storage))
