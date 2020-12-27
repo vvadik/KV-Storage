@@ -2,7 +2,7 @@ import unittest
 import random
 import string
 from unittest.mock import patch
-from os import remove
+from os import remove, path
 from kvstorage import LocalStrorage
 
 
@@ -12,14 +12,6 @@ class HashMock:
 
     def hexdigest(self):
         return str(self.value)
-
-
-class BadHashMock:
-    def __init__(self, key):
-        pass
-
-    def hexdigest(self):
-        return str(1)
 
 
 class Test_setup(unittest.TestCase):
@@ -135,32 +127,34 @@ class Test_setup(unittest.TestCase):
         for key, value in self.check2.items():
             self.assertEqual(self.storage._get_key(key), value)
 
-    @patch('kvstorage.md5', new=BadHashMock)
-    def test_collisions_with_bad_hash_add_delete(self):
+    def test_defragmentation(self):
+        # Пишем 78Мб, удаляем и ожидаем увидеть не более 3Мб
         self.check = {}
-        self.check2 = {}
-        amount_pairs = random.randint(200, 500)
-        repeat_check = random.randint(2, 2)
+        amount_pairs = 200  # 1024
+        length = 2000  # 100
+        for i in range(100):  # i = (length * amount_pairs / 2^20)Mb
+            all_keys = []
+            for pair in range(amount_pairs):
+                key = ''.join(random.choice(string.ascii_letters)
+                              for _ in range(length))
+                value = ''.join(random.choice(string.ascii_letters)
+                                for _ in range(length))
+                self.storage.add_key((key, value))
+                all_keys.append(key)
+            for key in all_keys:
+                self.storage._remove_key(key)
+
         for pair in range(amount_pairs):
             key = ''.join(random.choice(string.ascii_letters)
-                          for _ in range(random.randint(10, 20)))
+                          for _ in range(length))
             value = ''.join(random.choice(string.ascii_letters)
-                            for _ in range(random.randint(10, 20)))
-            if pair % repeat_check == 0:
-                self.check[key] = value
-            else:
-                self.check2[key] = value
+                            for _ in range(length))
             self.storage.add_key((key, value))
-        for key, value in self.check.items():
-            self.storage._remove_key(key)
+            self.check[key] = value
+
+        self.storage.defragmentation()
 
         for key, value in self.check.items():
-            self.assertEqual(self.storage._get_key(key), 'no such key')
-        for key, value in self.check2.items():
             self.assertEqual(self.storage._get_key(key), value)
-
-    def test_defragmentation(self):
-        pass
-        # add- all delete
-        # add- all delete
-        # check length
+        self.assertEqual(path.getsize(self.storage.file_name) < 1024*1024*3,
+                         True)

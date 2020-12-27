@@ -1,4 +1,4 @@
-from os import path
+from os import path, remove, rename
 from itertools import count
 import argparse
 import struct
@@ -11,7 +11,7 @@ class LocalStrorage:
         self.file_name = file_name
         self.storage = {}
         self.deleted_sectors = {}  # {start: end}
-        if path.exists(self.file_name) and path.getsize(self.file_name) > 8:
+        if path.exists(self.file_name) and path.getsize(self.file_name) > 24:
             self.restore_file()
         else:
             self.create_storage()
@@ -28,7 +28,8 @@ class LocalStrorage:
         next_ = start
         while next_:
             self.file.seek(next_)
-            key_len, next_, value_len = struct.unpack('!QQQ', self.file.read(24))
+            key_len, next_, value_len = struct.unpack('!QQQ',
+                                                      self.file.read(24))
             key_from_storage = self.file.read(key_len)
             if key != key_from_storage.decode():
                 continue
@@ -111,22 +112,40 @@ class LocalStrorage:
         return self.storage[hash_key]
 
     def defragmentation(self, type_=None):
-        pass
-        # with open(f".{self.file_name}", 'wb+') as tmp:
-        #     for key, value in self.storage.items():
-        #         value = self.read(value)
-        #         value_len = struct.pack('!Q', len(value))
-        #         tmp.seek(0)
-        #         start = path.getsize(f'.{self.file_name}')
+        if not self.deleted_sectors:
+            return
+        with open(f".{self.file_name}", 'wb+') as tmp:
+            tmp.write(b'\x00')
+            tmp.seek(0)
+            for key, value in self.storage.items():
+                next_ = 1
+                size = path.getsize(f".{self.file_name}")
+                self.storage[key] = size
+                while next_:
+                    self.file.seek(value)
+                    key_len, next_, value_len = \
+                        struct.unpack('!QQQ', self.file.read(24))
+                    value = next_
+                    key_from_storage = self.file.read(key_len)
+                    value_from_storage = self.file.read(value_len)
+                    tmp.seek(0)
+                    size = path.getsize(f".{self.file_name}")
+                    if next_ == 0:
+                        next_new = 0
+                    else:
+                        next_new = size + 8
+                    tmp.seek(0, 2)
+                    tmp.write(struct.pack('!QQQ',
+                                          key_len, next_new, value_len)
+                              + key_from_storage
+                              + value_from_storage)
+                    tmp.seek(0)
+        self.deleted_sectors = {}
 
-        #         self.storage[key] = start
-        #         tmp.seek(0, 2)
-        #         tmp.write(value_len + value)
-        #         tmp.seek(0)
-        # self.file.close()
-        # remove(self.file_name)
-        # rename(f'.{self.file_name}', self.file_name)
-        # self.file = open(f'{self.file_name}', 'rb+')
+        self.file.close()
+        remove(self.file_name)
+        rename(f'.{self.file_name}', self.file_name)
+        self.file = open(f'{self.file_name}', 'rb+')
 
     def close(self, type_=None):
         self.file.seek(0)
@@ -170,7 +189,7 @@ class LocalStrorage:
 
     def create_storage(self):
         with open(f'{self.file_name}', 'wb') as file:
-            file.write(b'1')
+            file.write(b'\x00')
 
     def run(self):
         while self._work:
