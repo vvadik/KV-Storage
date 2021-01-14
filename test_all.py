@@ -3,7 +3,7 @@ import random
 import string
 from unittest.mock import patch
 from os import remove, path
-from kvstorage import LocalStrorage
+from localstorage import LocalStrorage
 
 
 class HashMock:
@@ -16,11 +16,11 @@ class HashMock:
 
 class Test_setup(unittest.TestCase):
     def setUp(self):
-        self.storage = LocalStrorage('Test_storage.dat')
+        self.storage = LocalStrorage('.Test_storage.dat')
 
     def tearDown(self):
         self.storage.close()
-        remove('Test_storage.dat')
+        remove('.Test_storage.dat')
 
     def test_basic_things(self):
         # add
@@ -45,7 +45,7 @@ class Test_setup(unittest.TestCase):
 
         # open\close
         self.storage.close()
-        self.storage = LocalStrorage('Test_storage.dat')
+        self.storage = LocalStrorage('.Test_storage.dat')
         self.assertEqual(len(self.storage.storage), 1)
         self.assertEqual(len(self.storage.deleted_sectors), 3)
 
@@ -87,7 +87,7 @@ class Test_setup(unittest.TestCase):
         for key, value in self.check2.items():
             self.assertEqual(self.storage._get_key(key), value)
 
-    @patch('kvstorage.md5', new=HashMock)
+    @patch('localstorage.md5', new=HashMock)
     def test_collisions_random_add(self):
         self.check = {}
         amount_pairs = random.randint(2000, 5000)
@@ -103,7 +103,7 @@ class Test_setup(unittest.TestCase):
         for key, value in self.check.items():
             self.assertEqual(self.storage._get_key(key), value)
 
-    @patch('kvstorage.md5', new=HashMock)
+    @patch('localstorage.md5', new=HashMock)
     def test_collisions_random_delete(self):
         self.check = {}
         self.check2 = {}
