@@ -43,7 +43,7 @@ class Run(cmd.Cmd):
         self.storage.remove_key(args)
 
     def do_close(self, args):
-        '''Propew way to close storage'''
+        '''Proper way to close storage'''
         self.storage.close()
         sys.exit(0)
 
